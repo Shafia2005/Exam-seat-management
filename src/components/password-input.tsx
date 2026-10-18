@@ -18,6 +18,7 @@ export const PasswordInput = React.forwardRef<HTMLInputElement, Omit<InputProps,
           className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           aria-label={visible ? 'Hide password' : 'Show password'}
           tabIndex={-1}
+          suppressHydrationWarning
         >
           {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
         </button>

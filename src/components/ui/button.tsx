@@ -45,6 +45,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         className={cn(buttonVariants({ variant, size, className }))}
         disabled={asChild ? undefined : disabled || loading}
+        // Autofill/password extensions add attributes such as `fdprocessedid` before React hydrates.
+        suppressHydrationWarning
         {...props}
       >
         {asChild ? (

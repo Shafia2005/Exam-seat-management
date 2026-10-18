@@ -2,6 +2,8 @@ import * as React from 'react'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
+// Form controls tolerate attributes injected by autofill/password extensions
+// (e.g. `fdprocessedid`) before React hydrates, via `suppressHydrationWarning`.
 const controlBase =
   'flex w-full rounded-lg border border-input bg-card px-3 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/80 focus-visible:border-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-60 aria-[invalid=true]:border-destructive aria-[invalid=true]:ring-destructive/15'
 
@@ -14,7 +16,7 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(({ className, icon, trailing, ...props }, ref) => {
   if (!icon && !trailing) {
-    return <input ref={ref} className={cn(controlBase, 'h-9 py-1', className)} {...props} />
+    return <input ref={ref} className={cn(controlBase, 'h-9 py-1', className)} suppressHydrationWarning {...props} />
   }
   return (
     <div className="relative">
@@ -26,6 +28,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(({ className
       <input
         ref={ref}
         className={cn(controlBase, 'h-9 py-1', icon && 'pl-9', trailing && 'pr-10', className)}
+        suppressHydrationWarning
         {...props}
       />
       {trailing && <span className="absolute right-1.5 top-1/2 -translate-y-1/2">{trailing}</span>}
@@ -36,7 +39,7 @@ Input.displayName = 'Input'
 
 export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
   ({ className, ...props }, ref) => (
-    <textarea ref={ref} className={cn(controlBase, 'min-h-[80px] py-2', className)} {...props} />
+    <textarea ref={ref} className={cn(controlBase, 'min-h-[80px] py-2', className)} suppressHydrationWarning {...props} />
   )
 )
 Textarea.displayName = 'Textarea'
@@ -45,7 +48,7 @@ Textarea.displayName = 'Textarea'
 export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HTMLSelectElement>>(
   ({ className, children, ...props }, ref) => (
     <div className="relative">
-      <select ref={ref} className={cn(controlBase, 'h-9 cursor-pointer appearance-none py-1 pr-9', className)} {...props}>
+      <select ref={ref} className={cn(controlBase, 'h-9 cursor-pointer appearance-none py-1 pr-9', className)} suppressHydrationWarning {...props}>
         {children}
       </select>
       <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

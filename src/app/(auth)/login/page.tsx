@@ -110,6 +110,7 @@ export default function LoginPage() {
                 onClick={() => handleQuickLogin(role)}
                 disabled={isLoading}
                 aria-label={`Sign in as demo ${label}`}
+                suppressHydrationWarning
                 className={cn(
                   'group flex flex-col items-center gap-1 rounded-xl border bg-card px-2 py-3 text-center shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md disabled:pointer-events-none disabled:opacity-60',
                   pendingDemo === role && 'border-primary ring-4 ring-primary/15'
