@@ -6,6 +6,11 @@ export type SessionInfo = Omit<LoginResponse, 'token' | 'expiresAt'>
 
 export const DEFAULT_ORG_SLUG = process.env.NEXT_PUBLIC_DEFAULT_ORG_SLUG || ''
 export const DEMO_LOGIN_ENABLED = process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === 'true'
+/** The seeded demo organization. Demo shortcuts only ever sign in here. */
+export const DEMO_ORG_SLUG = process.env.NEXT_PUBLIC_DEMO_ORG_SLUG || 'apex-institute'
+
+/** True when demo shortcuts apply to this organization (never for real institutions). */
+export const isDemoOrganization = (slug: string | null | undefined) => DEMO_LOGIN_ENABLED && slug === DEMO_ORG_SLUG
 
 /** Seeded demo accounts (see prisma/seed.ts), used by the demo sign-in shortcuts. */
 export const DEMO_CREDENTIALS = {
@@ -28,8 +33,8 @@ class AuthService {
     return data
   }
 
-  async signInAs(role: DemoRole, organization = DEFAULT_ORG_SLUG): Promise<LoginResponse> {
-    return this.login({ organization, ...DEMO_CREDENTIALS[role] })
+  async signInAs(role: DemoRole): Promise<LoginResponse> {
+    return this.login({ organization: DEMO_ORG_SLUG, ...DEMO_CREDENTIALS[role] })
   }
 
   async registerOrganization(request: RegisterOrganizationRequest): Promise<LoginResponse> {

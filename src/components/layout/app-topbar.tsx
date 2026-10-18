@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 import { ROLE_DISPLAY_NAME, ROLE_HOME } from '@/lib/auth/roles'
 import { useAuthStore } from '@/store/auth.store'
 import { useRole } from '@/hooks/useRole'
-import { authService, DEMO_LOGIN_ENABLED, type DemoRole } from '@/services/auth.service'
+import { authService, isDemoOrganization, type DemoRole } from '@/services/auth.service'
 import { errorMessage } from '@/lib/api-client'
 import { toast } from '@/lib/toast'
 import { Button } from '@/components/ui/button'
@@ -30,7 +30,10 @@ const DEMO_ROLES: { role: DemoRole; label: string; Icon: typeof Shield }[] = [
   { role: 'student', label: 'Student', Icon: GraduationCap },
 ]
 
-/** Demo mode only: signs in as the seeded account for each role through the real API. */
+/**
+ * Demo mode only, and only inside the demo organization: signs in as the
+ * seeded account for each role through the real API. Real institutions never see it.
+ */
 function DemoRoleSwitcher() {
   const { role, isAdmin } = useRole()
   const [switching, setSwitching] = useState<DemoRole | null>(null)
@@ -150,7 +153,7 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
           </>
         )}
       </nav>
-      {DEMO_LOGIN_ENABLED && <DemoRoleSwitcher />}
+      {isDemoOrganization(organization?.slug) && <DemoRoleSwitcher />}
       <ThemeToggle />
       <UserMenu />
     </header>

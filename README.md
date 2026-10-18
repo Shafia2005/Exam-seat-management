@@ -102,7 +102,7 @@ The seed builds a live scenario:
 
 Re-running `npm run db:seed` rebuilds only the demo organization.
 
-With `NEXT_PUBLIC_ENABLE_DEMO_LOGIN="true"` the login page shows one-click demo sign-in buttons and the header shows a role switcher; both sign in through the real API. Turn this off in production.
+With `NEXT_PUBLIC_ENABLE_DEMO_LOGIN="true"`, the login page shows one-click demo sign-in buttons, and both sign in through the real API. The header also shows a role switcher, but only while you are signed in to the demo organization (`apex-institute`). Users of any other institution never see it. Turn demo login off in production.
 
 ## Environment
 
@@ -113,6 +113,7 @@ With `NEXT_PUBLIC_ENABLE_DEMO_LOGIN="true"` the login page shows one-click demo 
 | `JWT_EXPIRES_IN` | Session lifetime, e.g. `7d`, `12h` (default `7d`) |
 | `NEXT_PUBLIC_DEFAULT_ORG_SLUG` | Organization prefilled on the login page |
 | `NEXT_PUBLIC_ENABLE_DEMO_LOGIN` | `"true"` shows demo sign-in shortcuts (must be `"false"` in production) |
+| `NEXT_PUBLIC_DEMO_ORG_SLUG` | The demo organization the shortcuts sign in to; the role switcher appears only there (default `apex-institute`) |
 | `APP_URL` | Public base URL for emailed links and hall-ticket QR codes |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Email delivery. Without `SMTP_HOST`, emails are only logged |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`, `SMS_DEFAULT_COUNTRY_CODE` | SMS delivery (optional) |

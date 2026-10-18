@@ -12,6 +12,7 @@ import {
   DEFAULT_ORG_SLUG,
   DEMO_CREDENTIALS,
   DEMO_LOGIN_ENABLED,
+  DEMO_ORG_SLUG,
   type DemoRole,
 } from '@/services/auth.service'
 import type { DbUserRole } from '@/types/auth.types'
@@ -82,12 +83,13 @@ export default function LoginPage() {
   }
 
   const handleQuickLogin = (role: DemoRole) => {
+    // Demo accounts only exist in the demo organization.
     const { identifier, password: demoPassword } = DEMO_CREDENTIALS[role]
-    setOrganization(DEFAULT_ORG_SLUG)
+    setOrganization(DEMO_ORG_SLUG)
     setEmail(identifier)
     setPassword(demoPassword)
     setPendingDemo(role)
-    performLogin(DEFAULT_ORG_SLUG, identifier, demoPassword)
+    performLogin(DEMO_ORG_SLUG, identifier, demoPassword)
   }
 
   return (
