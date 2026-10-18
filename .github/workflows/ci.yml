@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: exam_admin
+          POSTGRES_PASSWORD: exam_admin_password
+          POSTGRES_DB: exam_seat_management
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U exam_admin -d exam_seat_management"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://exam_admin:exam_admin_password@localhost:5432/exam_seat_management?schema=public
+      JWT_SECRET: ci-only-secret-0123456789abcdefghijklmnopqrstuvwxyz
+      APP_URL: http://localhost:3000
+      NEXT_PUBLIC_DEFAULT_ORG_SLUG: apex-institute
+      NEXT_PUBLIC_ENABLE_DEMO_LOGIN: "false"
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint and type-check
+        run: |
+          npm run lint
+          npm run type-check
+
+      - name: Unit tests
+        run: npm test -- --ci
+
+      - name: Migrate and seed
+        run: |
+          npx prisma migrate deploy
+          npm run db:seed
+
+      - name: Build
+        run: npm run build
+
+      - name: API smoke test
+        run: |
+          npm start > server.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://localhost:3000/login > /dev/null && break; sleep 2; done
+          npm run test:smoke -- http://localhost:3000
+
+      - name: Server log
+        if: failure()
+        run: cat server.log || true
