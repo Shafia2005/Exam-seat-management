@@ -1,0 +1,93 @@
+[
+  {
+    "id": "1",
+    "name": "CS-101",
+    "number": "101",
+    "blockId": "1",
+    "blockName": "Computer Science Block",
+    "capacity": 60,
+    "rows": 6,
+    "columns": 10,
+    "isAvailable": true,
+    "createdAt": "2020-01-01T00:00:00Z",
+    "updatedAt": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "2",
+    "name": "CS-102",
+    "number": "102",
+    "blockId": "1",
+    "blockName": "Computer Science Block",
+    "capacity": 60,
+    "rows": 6,
+    "columns": 10,
+    "isAvailable": true,
+    "createdAt": "2020-01-01T00:00:00Z",
+    "updatedAt": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "3",
+    "name": "CS-103",
+    "number": "103",
+    "blockId": "1",
+    "blockName": "Computer Science Block",
+    "capacity": 60,
+    "rows": 6,
+    "columns": 10,
+    "isAvailable": true,
+    "createdAt": "2020-01-01T00:00:00Z",
+    "updatedAt": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "4",
+    "name": "EC-201",
+    "number": "201",
+    "blockId": "2",
+    "blockName": "Electronics Block",
+    "capacity": 50,
+    "rows": 5,
+    "columns": 10,
+    "isAvailable": true,
+    "createdAt": "2020-01-01T00:00:00Z",
+    "updatedAt": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "5",
+    "name": "EC-202",
+    "number": "202",
+    "blockId": "2",
+    "blockName": "Electronics Block",
+    "capacity": 50,
+    "rows": 5,
+    "columns": 10,
+    "isAvailable": true,
+    "createdAt": "2020-01-01T00:00:00Z",
+    "updatedAt": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "6",
+    "name": "ME-301",
+    "number": "301",
+    "blockId": "3",
+    "blockName": "Mechanical Block",
+    "capacity": 40,
+    "rows": 5,
+    "columns": 8,
+    "isAvailable": true,
+    "createdAt": "2020-01-01T00:00:00Z",
+    "updatedAt": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "7",
+    "name": "ME-302",
+    "number": "302",
+    "blockId": "3",
+    "blockName": "Mechanical Block",
+    "capacity": 40,
+    "rows": 5,
+    "columns": 8,
+    "isAvailable": true,
+    "createdAt": "2020-01-01T00:00:00Z",
+    "updatedAt": "2024-01-01T00:00:00Z"
+  }
+]

@@ -1,0 +1,516 @@
+// Multi-tenant schema for SeatGuard, the exam seat management platform.
+//
+// Every institutional record carries an `organizationId`. Natural keys such as
+// email, roll number, employee ID and room name are unique per organization
+// (not globally), so two institutions can share codes without colliding.
+// API handlers always scope queries by the organization taken from the session.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum StudentStatus {
+  ACTIVE
+  INACTIVE
+  GRADUATED
+  SUSPENDED
+}
+
+enum TeacherStatus {
+  ACTIVE
+  INACTIVE
+  ON_LEAVE
+}
+
+enum ExamType {
+  MID_SEM
+  INTERNAL
+  FINAL
+  SUPPLEMENTARY
+  PRACTICAL
+}
+
+enum ExamStatus {
+  DRAFT
+  SCHEDULED
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum AllocationAlgorithm {
+  SEQUENTIAL
+  RANDOM
+  DEPARTMENT_WISE
+  ANTI_CHEATING
+}
+
+enum DutyRole {
+  CHIEF_INVIGILATOR
+  INVIGILATOR
+  RELIEVER
+}
+
+enum DutyStatus {
+  ASSIGNED
+  CONFIRMED
+  SUBSTITUTED
+}
+
+enum ExamAttendanceStatus {
+  PRESENT
+  ABSENT
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+}
+
+enum NotificationStatus {
+  /// Delivered to the email/SMS provider.
+  SENT
+  /// No provider configured; recorded in the outbox only.
+  LOGGED
+  FAILED
+}
+
+// ─── Tenancy & identity ─────────────────────────────────────────────────────
+
+model Organization {
+  id                   String   @id @default(cuid())
+  name                 String
+  /// URL-safe identifier used at login and for subdomain resolution (e.g. "apex-institute").
+  slug                 String   @unique
+  /// Short institution code, stored upper-case (e.g. "APEX").
+  code                 String   @unique
+  domain               String?  @unique
+  logoUrl              String?
+  address              String?
+  isActive             Boolean  @default(true)
+  /// Students below this attendance percentage are ineligible unless overridden.
+  minAttendancePercent Int      @default(75)
+  /// IANA timezone used to decide "today" (exam status, attendance windows).
+  timezone             String   @default("Asia/Kolkata")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  users              User[]
+  auditLogs          AuditLog[]
+  notifications      NotificationLog[]
+  departments        Department[]
+  courses            Course[]
+  teachers           Teacher[]
+  students           Student[]
+  blocks             Block[]
+  rooms              Room[]
+  benches            Bench[]
+  exams              Exam[]
+  examSessions       ExamSession[]
+  seatAllocations    SeatAllocation[]
+  invigilationDuties InvigilationDuty[]
+}
+
+model User {
+  id                String    @id @default(cuid())
+  organizationId    String
+  /// Stored lower-case; unique within the organization.
+  email             String
+  passwordHash      String
+  firstName         String
+  lastName          String
+  role              UserRole
+  isActive          Boolean   @default(true)
+  lastLoginAt       DateTime?
+  /// Sessions issued before this moment are rejected (set on password change/reset).
+  passwordChangedAt DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  teacher             Teacher?
+  student             Student?
+  createdExams        Exam[]               @relation("ExamCreatedBy")
+  passwordResetTokens PasswordResetToken[]
+  auditLogs           AuditLog[]           @relation("AuditActor")
+  markedAttendance    SeatAllocation[]     @relation("AttendanceMarkedBy")
+
+  @@unique([organizationId, email])
+  @@index([organizationId, role])
+}
+
+// ─── Academic structure ─────────────────────────────────────────────────────
+
+model Department {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  code           String
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  courses      Course[]
+  teachers     Teacher[]
+  students     Student[]
+
+  @@unique([organizationId, code])
+}
+
+model Course {
+  id             String   @id @default(cuid())
+  organizationId String
+  departmentId   String
+  name           String
+  code           String
+  durationYears  Int      @default(4)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  department   Department   @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  students     Student[]
+
+  @@unique([organizationId, code])
+  @@index([departmentId])
+}
+
+model Teacher {
+  id              String        @id @default(cuid())
+  organizationId  String
+  userId          String        @unique
+  employeeId      String
+  departmentId    String
+  designation     String
+  phone           String?
+  specialization  String?
+  qualification   String?
+  experienceYears Int           @default(0)
+  joiningDate     DateTime?     @db.Date
+  /// Maximum invigilation duties per day.
+  maxDuties       Int           @default(2)
+  isAvailable     Boolean       @default(true)
+  status          TeacherStatus @default(ACTIVE)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department   Department         @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  duties       InvigilationDuty[]
+
+  @@unique([organizationId, employeeId])
+  @@index([organizationId, departmentId])
+}
+
+model Student {
+  id                    String        @id @default(cuid())
+  organizationId        String
+  userId                String        @unique
+  rollNumber            String
+  registrationNumber    String?
+  departmentId          String
+  courseId              String
+  currentSemester       Int
+  section               String?
+  batchYear             Int
+  gender                Gender
+  dateOfBirth           DateTime?     @db.Date
+  bloodGroup            String?
+  phone                 String?
+  admissionDate         DateTime?     @db.Date
+  address               String?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  attendancePercentage  Float         @default(0)
+  isEligible            Boolean       @default(true)
+  /// When true, `isEligible` was set manually and is not recomputed from attendance.
+  eligibilityOverride   Boolean       @default(false)
+  status                StudentStatus @default(ACTIVE)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department      Department       @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  course          Course           @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  seatAllocations SeatAllocation[]
+
+  @@unique([organizationId, rollNumber])
+  @@unique([organizationId, registrationNumber])
+  @@index([organizationId, departmentId])
+  @@index([organizationId, status])
+}
+
+// ─── Physical infrastructure ────────────────────────────────────────────────
+
+model Block {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  code           String
+  buildingName   String?
+  floor          Int?
+  capacity       Int      @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  rooms        Room[]
+
+  @@unique([organizationId, code])
+}
+
+model Room {
+  id             String   @id @default(cuid())
+  organizationId String
+  blockId        String
+  /// Display name, unique per organization (e.g. "CS-101").
+  name           String
+  number         String
+  floor          Int?
+  rows           Int
+  columns        Int
+  capacity       Int
+  isAvailable    Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization    Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  block           Block              @relation(fields: [blockId], references: [id], onDelete: Restrict)
+  benches         Bench[]
+  seatAllocations SeatAllocation[]
+  duties          InvigilationDuty[]
+
+  @@unique([organizationId, name])
+  @@index([blockId])
+}
+
+model Bench {
+  id             String   @id @default(cuid())
+  organizationId String
+  roomId         String
+  number         String
+  row            Int
+  column         Int
+  /// Number of seat positions on this bench (1 = single-seater).
+  seatsPerBench  Int      @default(1)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  room            Room             @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  seatAllocations SeatAllocation[]
+
+  @@unique([roomId, row, column])
+  @@unique([roomId, number])
+  @@index([organizationId])
+}
+
+// ─── Examinations ───────────────────────────────────────────────────────────
+
+model Exam {
+  id             String     @id @default(cuid())
+  organizationId String
+  name           String
+  examType       ExamType
+  academicYear   String
+  semester       Int
+  startDate      DateTime   @db.Date
+  endDate        DateTime   @db.Date
+  description    String?
+  instructions   String?
+  status         ExamStatus @default(DRAFT)
+  createdById    String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  organization    Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy       User?              @relation("ExamCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  sessions        ExamSession[]
+  seatAllocations SeatAllocation[]
+  duties          InvigilationDuty[]
+
+  @@index([organizationId, status])
+  @@index([organizationId, startDate])
+}
+
+/// One paper/subject sitting within an exam (date + time window).
+model ExamSession {
+  id              String   @id @default(cuid())
+  organizationId  String
+  examId          String
+  subjectName     String
+  subjectCode     String?
+  examDate        DateTime @db.Date
+  /// "HH:mm", 24-hour clock.
+  startTime       String
+  /// "HH:mm", 24-hour clock.
+  endTime         String
+  durationMinutes Int
+  maximumMarks    Int      @default(100)
+  passingMarks    Int      @default(40)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization    Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  exam            Exam               @relation(fields: [examId], references: [id], onDelete: Cascade)
+  seatAllocations SeatAllocation[]
+  duties          InvigilationDuty[]
+
+  @@index([examId, examDate])
+}
+
+/// A student's seat for one paper (exam session). Seating can differ per paper.
+model SeatAllocation {
+  id                   String                @id @default(cuid())
+  organizationId       String
+  examId               String
+  sessionId            String
+  studentId            String
+  roomId               String
+  benchId              String
+  seatPosition         Int                   @default(1)
+  /// Human-readable seat, e.g. "B5" (row B, column 5).
+  seatLabel            String
+  algorithm            AllocationAlgorithm?
+  /// Exam-day attendance marked by the invigilator; null until marked.
+  attendanceStatus     ExamAttendanceStatus?
+  attendanceMarkedAt   DateTime?
+  attendanceMarkedById String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  exam               Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  session            ExamSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student            Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  room               Room         @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  bench              Bench        @relation(fields: [benchId], references: [id], onDelete: Cascade)
+  attendanceMarkedBy User?        @relation("AttendanceMarkedBy", fields: [attendanceMarkedById], references: [id], onDelete: SetNull)
+
+  @@unique([sessionId, studentId])
+  @@unique([sessionId, benchId, seatPosition])
+  @@index([organizationId, examId])
+  @@index([sessionId, roomId])
+  @@index([studentId])
+  @@index([roomId])
+}
+
+/// A teacher's invigilation duty in one room for one paper (exam session).
+model InvigilationDuty {
+  id             String     @id @default(cuid())
+  organizationId String
+  examId         String
+  sessionId      String
+  roomId         String
+  teacherId      String
+  role           DutyRole   @default(INVIGILATOR)
+  status         DutyStatus @default(ASSIGNED)
+  notes          String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  exam         Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  session      ExamSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  room         Room         @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  teacher      Teacher      @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, roomId, teacherId])
+  @@index([organizationId, examId])
+  @@index([sessionId])
+  @@index([teacherId])
+}
+
+// ─── Accounts, audit & notifications ────────────────────────────────────────
+
+/// Single-use "forgot password" token; only its SHA-256 hash is stored.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// Who changed what, and when.
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String
+  actorId        String?
+  /// Snapshot of the actor's name, kept if the account is later deleted.
+  actorName      String
+  /// Dotted action name, e.g. "student.created".
+  action         String
+  entityType     String
+  entityId       String?
+  summary        String
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actor        User?        @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, entityType])
+}
+
+/// Every email/SMS the system sends (or logs when no provider is configured).
+model NotificationLog {
+  id             String              @id @default(cuid())
+  organizationId String
+  channel        NotificationChannel
+  recipient      String
+  recipientName  String?
+  subject        String?
+  body           String
+  status         NotificationStatus
+  error          String?
+  relatedType    String?
+  relatedId      String?
+  createdAt      DateTime            @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+}
+
+// ─── Infrastructure ─────────────────────────────────────────────────────────
+
+/// Fixed-window counters for rate limiting, shared by every app instance.
+model RateLimit {
+  key     String   @id
+  count   Int
+  resetAt DateTime
+
+  @@index([resetAt])
+}

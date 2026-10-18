@@ -1,0 +1,46 @@
+[
+  {
+    "id": "1",
+    "name": "Computer Science Block",
+    "code": "CS",
+    "capacity": 300,
+    "floor": 1,
+    "buildingName": "Main Building",
+    "isActive": true,
+    "createdAt": "2020-01-01T00:00:00Z",
+    "updatedAt": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "2",
+    "name": "Electronics Block",
+    "code": "EC",
+    "capacity": 250,
+    "floor": 1,
+    "buildingName": "Main Building",
+    "isActive": true,
+    "createdAt": "2020-01-01T00:00:00Z",
+    "updatedAt": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "3",
+    "name": "Mechanical Block",
+    "code": "ME",
+    "capacity": 280,
+    "floor": 1,
+    "buildingName": "Main Building",
+    "isActive": true,
+    "createdAt": "2020-01-01T00:00:00Z",
+    "updatedAt": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "4",
+    "name": "Civil Block",
+    "code": "CV",
+    "capacity": 200,
+    "floor": 2,
+    "buildingName": "Science Building",
+    "isActive": true,
+    "createdAt": "2020-01-01T00:00:00Z",
+    "updatedAt": "2024-01-01T00:00:00Z"
+  }
+]

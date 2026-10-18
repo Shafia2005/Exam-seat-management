@@ -1,0 +1,61 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: exam-seat-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: exam_admin
+      POSTGRES_PASSWORD: exam_admin_password
+      POSTGRES_DB: exam_seat_management
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U exam_admin -d exam_seat_management"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # The app itself, for running a production build locally or on a single server:
+  #   docker compose --profile app up -d --build
+  # `npm run db:up` (plain `docker compose up -d`) still starts only the database.
+  migrate:
+    profiles: ["app"]
+    build: { context: ., target: migrate }
+    environment:
+      DATABASE_URL: postgresql://exam_admin:exam_admin_password@postgres:5432/exam_seat_management?schema=public
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  app:
+    profiles: ["app"]
+    build:
+      context: .
+      target: runner
+      args:
+        NEXT_PUBLIC_DEFAULT_ORG_SLUG: ${NEXT_PUBLIC_DEFAULT_ORG_SLUG:-}
+        NEXT_PUBLIC_ENABLE_DEMO_LOGIN: "false"
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://exam_admin:exam_admin_password@postgres:5432/exam_seat_management?schema=public
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER:-}
+      SMS_DEFAULT_COUNTRY_CODE: ${SMS_DEFAULT_COUNTRY_CODE:-+91}
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+volumes:
+  pgdata:
