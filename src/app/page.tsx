@@ -9,6 +9,7 @@ import {
   Ticket,
   UserCheck,
 } from 'lucide-react'
+import { HeroSeatDemo } from '@/components/hero-seat-demo'
 import { Logo } from '@/components/layout/logo'
 import { ThemeToggle } from '@/components/theme'
 import { Button } from '@/components/ui/button'
@@ -46,9 +47,6 @@ const FEATURES = [
   },
 ]
 
-// Seat colours for the decorative preview grid (department pattern).
-const PREVIEW = ['bg-indigo-500', 'bg-emerald-500', 'bg-amber-500', 'bg-sky-500', 'bg-rose-500', 'bg-violet-500']
-
 export default function Home() {
   return (
     <div className="min-h-screen bg-background">
@@ -73,7 +71,7 @@ export default function Home() {
           <div className="pointer-events-none absolute left-1/2 top-0 h-[480px] w-[880px] -translate-x-1/2 rounded-full bg-gradient-to-r from-indigo-500/20 via-violet-500/20 to-sky-500/20 blur-3xl" />
 
           <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-5 pb-20 pt-16 lg:grid-cols-2 lg:pt-24">
-            <div className="space-y-7">
+            <div className="space-y-7 duration-700 animate-in fade-in slide-in-from-bottom-4 fill-mode-both">
               <span className="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm">
                 <Building2 className="size-3.5 text-primary" /> Built for colleges, universities and schools
               </span>
@@ -101,37 +99,8 @@ export default function Home() {
             </div>
 
             {/* Product preview */}
-            <div className="relative">
-              <div className="rounded-2xl border bg-card p-5 shadow-elevated">
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold">Hall CS-101</p>
-                    <p className="text-xs text-muted-foreground">60 seats · 6 departments interleaved</p>
-                  </div>
-                  <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
-                    0 conflicts
-                  </span>
-                </div>
-                <div className="mb-3 rounded-md bg-muted py-1 text-center text-[0.65rem] font-medium tracking-[0.3em] text-muted-foreground">
-                  FRONT
-                </div>
-                <div className="grid grid-cols-10 gap-1.5">
-                  {Array.from({ length: 60 }, (_, i) => {
-                    const row = Math.floor(i / 10)
-                    const col = i % 10
-                    return (
-                      <span
-                        key={i}
-                        className={`aspect-square rounded-[5px] opacity-80 ${PREVIEW[(row * 4 + col) % PREVIEW.length]}`}
-                      />
-                    )
-                  })}
-                </div>
-              </div>
-              <div className="absolute -bottom-6 -left-6 hidden rounded-xl border bg-card p-4 shadow-elevated sm:block">
-                <p className="text-xs text-muted-foreground">Seats allocated</p>
-                <p className="text-2xl font-semibold tabular-nums">1,248</p>
-              </div>
+            <div className="duration-700 animate-in fade-in slide-in-from-bottom-6 fill-mode-both delay-150">
+              <HeroSeatDemo />
             </div>
           </div>
         </section>

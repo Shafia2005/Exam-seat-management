@@ -87,10 +87,26 @@ module.exports = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: 0 },
         },
+        // Landing-page hall preview (src/components/hero-seat-demo.tsx).
+        "seat-scan": {
+          from: { transform: "translateY(-100%)" },
+          to: { transform: "translateY(400%)" },
+        },
+        "seat-sheen": {
+          from: { transform: "translateX(-100%) skewX(-20deg)" },
+          to: { transform: "translateX(350%) skewX(-20deg)" },
+        },
+        "seat-flip": {
+          "0%, 100%": { transform: "rotateY(0deg)" },
+          "50%": { transform: "rotateY(90deg) scale(0.9)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "seat-scan": "seat-scan 1.3s cubic-bezier(0.4, 0, 0.2, 1) forwards",
+        "seat-sheen": "seat-sheen 1.1s ease-in-out forwards",
+        "seat-flip": "seat-flip 0.6s ease-in-out",
       },
     },
   },
